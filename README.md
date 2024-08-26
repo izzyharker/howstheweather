@@ -1,4 +1,13 @@
-# Serenity Bot with shuttle
+# Weatherbot with Serenity + Shuttle
 
-New bot goal: /weather [city]
-Should retrieve the lat/long of a city from a database and give weather data based on that.
+Discord bot created in Rust to report the current weather in a location.
+
+_usage_
+```
+/weather [city]
+```
+Checks existing database of cities and returns a weather update on match.
+
+## Future goals
+- Expand city selection from limited database to an API call
+- Update output formatting to add forecase and graphics styling
