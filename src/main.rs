@@ -1,16 +1,16 @@
+mod commands;
+
 use anyhow::Context as _;
 use serenity::all::{
-    CreateCommand, CreateInteractionResponse, CreateInteractionResponseMessage, GuildId,
-    Interaction,
+    CreateInteractionResponse, CreateInteractionResponseMessage, GuildId, Interaction,
 };
 use serenity::async_trait;
 use serenity::model::channel::Message;
 use serenity::model::gateway::Ready;
 use serenity::prelude::*;
 use shuttle_runtime::SecretStore;
-use tracing::{error, info};
-mod weather;
 use std::thread;
+use tracing::{error, info};
 
 struct Bot;
 
@@ -31,10 +31,7 @@ impl EventHandler for Bot {
 
         // add "/hello" command to the bot
         guild_id
-            .set_commands(
-                &ctx.http,
-                vec![CreateCommand::new("weather").description("Give me the current weather")],
-            )
+            .set_commands(&ctx.http, vec![commands::weather::register()])
             .await
             .unwrap();
     }
@@ -44,9 +41,11 @@ impl EventHandler for Bot {
         // check if the interaction is a command
         if let Interaction::Command(command) = interaction {
             let response_content = match command.data.name.as_str() {
-                "weather" => thread::spawn(|| weather::weather().to_owned())
-                    .join()
-                    .expect("Thread panicked."),
+                "weather" => thread::scope(|s| {
+                    s.spawn(|| commands::weather::weather(&command.data.options()).to_owned())
+                        .join()
+                        .expect("Thread panicked.")
+                }),
                 command => unreachable!("Unknown command: {}", command),
             };
             // send `response_content` to the discord server
