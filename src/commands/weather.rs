@@ -1,12 +1,20 @@
 use csv;
-use geolocation::{find, Locator};
-use my_internet_ip;
+// use geolocation::{find, Locator};
+// use my_internet_ip;
 use reqwest;
 use serde::{Deserialize, Serialize};
 use serenity::all::{
     CommandOptionType, CreateCommand, CreateCommandOption, ResolvedOption, ResolvedValue,
 };
+use std::collections::HashMap;
 use std::fs::File;
+
+#[derive(Deserialize, Debug)]
+struct Cities {
+    city: String,
+    lat: f64,
+    lon: f64,
+}
 
 #[derive(Serialize, Deserialize, Debug)]
 struct Hourly {
@@ -70,42 +78,46 @@ pub async fn weather(options: &[ResolvedOption]) -> String {
 
     println!("{:?}", cities.headers());
 
-    let ip_address = match my_internet_ip::get() {
-        Ok(ip) => ip,
-        Err(e) => panic!("Could not get IP: {:?}", e),
-    };
+    let mut locations: HashMap<String, Vec<f64>> = HashMap::new();
+    for result in cities.deserialize() {
+        let record: Cities = result.unwrap();
+        locations.insert(record.city, vec![record.lat, record.lon]);
+    }
 
-    let location: Locator = match find(&format!("{:?}", ip_address)) {
-        Ok(loc) => loc,
-        Err(e) => panic!("Issue with IP address: {:?}", e),
-    };
+    if locations.contains_key(&req_city) {
+        let location = locations.get(&req_city).unwrap().to_owned();
 
-    // TODO: find the city from dataset
+        // Maybe switch to national weather service api at some point?
+        // latitude then longitude
+        let url = format!("https://api.open-meteo.com/v1/forecast?latitude={}&longitude={}&current=temperature_2m&hourly=temperature_2m&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max&temperature_unit=fahrenheit&timezone=America%2FLos_Angeles&forecast_days=3", location[0], location[1]);
 
-    // Maybe switch to national weather service api at some point?
-    let url = format!("https://api.open-meteo.com/v1/forecast?latitude={}&longitude={}&current=temperature_2m&hourly=temperature_2m&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max&temperature_unit=fahrenheit&timezone=America%2FLos_Angeles&forecast_days=3", location.latitude, location.longitude);
+        let response = reqwest::get(url).await.unwrap();
 
-    let response = reqwest::get(url).await.unwrap();
+        let parsed = match response.status().is_success() {
+            true => {
+                let text = response.text().await.unwrap();
+                // println!("Success! \n{:?}", text);
 
-    let parsed = match response.status().is_success() {
-        true => {
-            let text = response.text().await.unwrap();
-            // println!("Success! \n{:?}", text);
+                let data: Weather = serde_json::from_str(&text).unwrap();
+                data
+            }
+            _ => {
+                panic!("Oh no! A wild error appears: {:?}", response.status());
+            }
+        };
 
-            let data: Weather = serde_json::from_str(&text).unwrap();
-            data
-        }
-        _ => {
-            panic!("Oh no! A wild error appears: {:?}", response.status());
-        }
-    };
+        let retstr: String = format!(
+            "Approximate Location (lat, long): {}, {}\nCurrent temperature: {}\nRequested city: {}",
+            location[0], location[1], parsed.current.temperature_2m, req_city
+        );
 
-    let retstr: String = format!(
-        "Approximate Location (lat, long): {}, {}\nCurrent temperature: {}\nRequested city: {}",
-        location.latitude, location.longitude, parsed.current.temperature_2m, req_city
-    );
-
-    retstr
+        retstr
+    } else {
+        format!(
+            "Requested city {:?} could not be found in database!",
+            req_city
+        )
+    }
 }
 
 pub fn register() -> CreateCommand {
