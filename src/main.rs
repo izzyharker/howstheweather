@@ -31,7 +31,13 @@ impl EventHandler for Bot {
 
         // add "/hello" command to the bot
         guild_id
-            .set_commands(&ctx.http, vec![commands::weather::register()])
+            .set_commands(
+                &ctx.http,
+                vec![
+                    commands::weather::register(),
+                    commands::forecast::register(),
+                ],
+            )
             .await
             .unwrap();
     }
@@ -43,6 +49,11 @@ impl EventHandler for Bot {
             let response_content = match command.data.name.as_str() {
                 "weather" => thread::scope(|s| {
                     s.spawn(|| commands::weather::weather(&command.data.options()).to_owned())
+                        .join()
+                        .expect("Thread panicked.")
+                }),
+                "forecast" => thread::scope(|s| {
+                    s.spawn(|| commands::forecast::forecast(&command.data.options()).to_owned())
                         .join()
                         .expect("Thread panicked.")
                 }),
