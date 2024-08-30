@@ -11,7 +11,7 @@ use std::fs::File;
 
 // Allows use of .await for async requests
 #[tokio::main]
-pub async fn weather(options: &[ResolvedOption]) -> String {
+pub async fn forecast(options: &[ResolvedOption]) -> String {
     let req_city = if let Some(ResolvedOption {
         value: ResolvedValue::String(city),
         ..
@@ -55,8 +55,8 @@ pub async fn weather(options: &[ResolvedOption]) -> String {
         };
 
         let retstr: String = format!(
-            "Approximate Location (lat, long): {}, {}\nCurrent temperature: {}\nRequested city: {}",
-            location[0], location[1], parsed.current.temperature_2m, req_city
+            "Temperature forcast: {:?}\nRequested city: {}",
+            parsed.daily.temperature_2m_max, req_city
         );
 
         retstr
@@ -69,13 +69,13 @@ pub async fn weather(options: &[ResolvedOption]) -> String {
 }
 
 pub fn register() -> CreateCommand {
-    CreateCommand::new("weather")
-        .description("Gets the weather for your city.")
+    CreateCommand::new("forecast")
+        .description("Gets the 3-day forecast for your city.")
         .add_option(
             CreateCommandOption::new(
                 CommandOptionType::String,
                 "city",
-                "The city to get the weather of",
+                "The city to get the forecast of",
             )
             .required(true),
         )
