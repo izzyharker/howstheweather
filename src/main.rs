@@ -86,7 +86,7 @@ async fn serenity(
     let client = Client::builder(&token, intents)
         .event_handler(Bot)
         .await
-        .expect("Err creating client");
+        .expect("Error creating client");
 
     Ok(client.into())
 }
