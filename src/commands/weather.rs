@@ -58,8 +58,8 @@ pub async fn weather(options: &[ResolvedOption]) -> String {
             "The current temperature is {:?}. The high in {} today is {:?} and the low is {:?}.",
             parsed.current.temperature_2m,
             req_city,
-            parsed.daily.temperature_2m_max,
-            parsed.daily.temperature_2m_min
+            parsed.daily.temperature_2m_max[0],
+            parsed.daily.temperature_2m_min[0]
         );
 
         retstr
