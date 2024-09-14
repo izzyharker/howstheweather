@@ -55,8 +55,11 @@ pub async fn forecast(options: &[ResolvedOption]) -> String {
         };
 
         let retstr: String = format!(
-            "Temperature forcast: {:?}\nRequested city: {}",
-            parsed.daily.temperature_2m_max, req_city
+            "The forcast for {} for the next 3 days is: \n{}\n{}\n{}.",
+            req_city,
+            parsed.daily.temperature_2m_max[0],
+            parsed.daily.temperature_2m_max[1],
+            parsed.daily.temperature_2m_max[2]
         );
 
         retstr

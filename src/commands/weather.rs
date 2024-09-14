@@ -55,8 +55,11 @@ pub async fn weather(options: &[ResolvedOption]) -> String {
         };
 
         let retstr: String = format!(
-            "Approximate Location (lat, long): {}, {}\nCurrent temperature: {}\nRequested city: {}",
-            location[0], location[1], parsed.current.temperature_2m, req_city
+            "The current temperature is {:?}. The high in {} today is {:?} and the low is {:?}.",
+            parsed.current.temperature_2m,
+            req_city,
+            parsed.daily.temperature_2m_max,
+            parsed.daily.temperature_2m_min
         );
 
         retstr
